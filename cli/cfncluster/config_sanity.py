@@ -20,9 +20,10 @@ import urllib.request, urllib.error, urllib.parse
 from urllib.parse import urlparse
 import boto.exception
 import sys
+import logging
 
 def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_type,resource_value):
-
+    logger = logging.getLogger('cfncluster.config_sanity.check_resource')
     # Loop over all supported resource checks
     # EC2 KeyPair
     if resource_type == 'EC2KeyPair':
@@ -31,8 +32,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = ec2_conn.get_all_key_pairs(keynames=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
     # VPC Id
     elif resource_type == 'VPC':
         try:
@@ -40,15 +42,18 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = vpc_conn.get_all_vpcs(vpc_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
         # Check for DNS support in the VPC
         if not vpc_conn.describe_vpc_attribute(test[0].id, attribute='enableDnsSupport').enable_dns_support:
-            print("DNS Support is not enabled in %s" % test[0].id)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical("DNS Support is not enabled in %s" % test[0].id)
+            raise e
         if not vpc_conn.describe_vpc_attribute(test[0].id, attribute='enableDnsHostnames').enable_dns_hostnames:
-            print("DNS Hostnames not enabled in %s" % test[0].id)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical("DNS Hostnames not enabled in %s" % test[0].id)
+            raise e
     # VPC Subnet Id
     elif resource_type == 'VPCSubnet':
         try:
@@ -56,8 +61,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = vpc_conn.get_all_subnets(subnet_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
     # VPC Security Group
     elif resource_type == 'VPCSecurityGroup':
         try:
@@ -65,8 +71,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = vpc_conn.get_all_security_groups(group_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
     # EC2 AMI Id
     elif resource_type == 'EC2Ami':
         try:
@@ -74,8 +81,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = ec2_conn.get_all_images(image_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
     # EC2 Placement Group
     elif resource_type == 'EC2PlacementGroup':
         if resource_value == 'DYNAMIC':
@@ -86,8 +94,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                      aws_secret_access_key=aws_secret_access_key)
                 test = ec2_conn.get_all_placement_groups(groupnames=resource_value)
             except boto.exception.BotoServerError as e:
-                print('Config sanity error: %s' % e.message)
-                sys.exit(1)
+                logger.exception(e)
+                logger.critical('Config sanity error: %s' % e.message)
+                raise e
     # URL
     elif resource_type == 'URL':
         scheme = urlparse(resource_value).scheme
@@ -97,11 +106,13 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
             try:
                 urllib.request.urlopen(resource_value)
             except urllib.error.HTTPError as e:
-                print('Config sanity error:', resource_value, e.code, e.reason)
-                sys.exit(1)
+                logger.exception(e)
+                logger.critical('Config sanity error:', resource_value, e.code, e.reason)
+                raise e
             except urllib.error.URLError as e:
-                print('Config sanity error:', resource_value, e.reason)
-                sys.exit(1)
+                logger.exception(e)
+                logger.critical('Config sanity error:', resource_value, e.reason)
+                raise e
     # EC2 EBS Snapshot Id
     elif resource_type == 'EC2Snapshot':
         try:
@@ -109,8 +120,9 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = ec2_conn.get_all_snapshots(snapshot_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e
     # EC2 EBS Volume Id
     elif resource_type == 'EC2Volume':
         try:
@@ -118,5 +130,6 @@ def check_resource(region, aws_access_key_id, aws_secret_access_key, resource_ty
                                                  aws_secret_access_key=aws_secret_access_key)
             test = ec2_conn.get_all_volumes(volume_ids=resource_value)
         except boto.exception.BotoServerError as e:
-            print('Config sanity error: %s' % e.message)
-            sys.exit(1)
+            logger.exception(e)
+            logger.critical('Config sanity error: %s' % e.message)
+            raise e

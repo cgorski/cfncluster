@@ -51,8 +51,22 @@ def start(args):
 def stop(args):
     cfncluster.stop(args)
 
+class OneLineFormatter(logging.Formatter):
+    def format(self, record):
+        s = super(OneLineFormatter, self).format(record)
+        s = s.replace('\n', '|')
+        return s
+    
 def config_logger():
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d - %(levelname)s - %(name)s - %(message)s',datefmt='%Y-%m-%dT%H:%M:%S',level=logging.INFO)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler(stream=sys.stdout)
+    ch.setLevel(logging.INFO)
+    
+    formatter = OneLineFormatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(name)s - %(message)s',datefmt='%Y-%m-%dT%H:%M:%S')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
     
 def main():
     config_logger()
