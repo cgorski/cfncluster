@@ -57,11 +57,18 @@ class OneLineFormatter(logging.Formatter):
         s = s.replace('\n', '|')
         return s
     
-def config_logger():
+def config_logger(verbose):
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
     ch = logging.StreamHandler(stream=sys.stdout)
-    ch.setLevel(logging.INFO)
+    if verbose:
+        ch.setLevel(logging.DEBUG)
+    else:
+        ch.setLevel(logging.INFO)
+        
     
     formatter = OneLineFormatter(fmt='%(asctime)s.%(msecs)03d - %(levelname)s - %(name)s - %(message)s',datefmt='%Y-%m-%dT%H:%M:%S')
     ch.setFormatter(formatter)
@@ -69,10 +76,6 @@ def config_logger():
 
     
 def main():
-    config_logger()
-    
-    logger = logging.getLogger(__name__)
-    logger.info("CfnCluster cli starting")
     
     parser = argparse.ArgumentParser(description='cfncluster is a tool to launch and manage a cluster.')
     parser.add_argument("--config", "-c", dest="config_file", help='specify a alternative config file')
@@ -80,6 +83,7 @@ def main():
                         default=None)
     parser.add_argument( "--nowait", "-nw", dest="nowait", action='store_true',
                         help='do not wait for stack events, after executing stack command')
+    parser.add_argument("--verbose","-v", dest="verbose", action='store_true')
 
     subparsers = parser.add_subparsers()
     subparsers.required = True
@@ -152,5 +156,15 @@ def main():
     pversion.set_defaults(func=version)
 
     args = parser.parse_args()
+    config_logger(args.verbose)
+    logger = logging.getLogger(__name__)
+
+    logger.info("CfnCluster CLI Starting")
+    logger.debug("Debug messages enabled.")
+
     logging.debug(args)
     args.func(args)
+
+
+    
+
