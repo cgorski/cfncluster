@@ -53,9 +53,10 @@ def create(args):
             vpcconn = boto.vpc.connect_to_region(config.region,aws_access_key_id=config.aws_access_key_id,
                                                  aws_secret_access_key=config.aws_secret_access_key)
             availability_zone = str(vpcconn.get_all_subnets(subnet_ids=master_subnet_id)[0].availability_zone)
-        except Exception, e:
+        except Exception as e:
+            logger.exception(e)
             logger.critical(e.message)
-            sys.exit(1)
+            raise e
         config.parameters.append(('AvailabilityZone', availability_zone))
     except ValueError:
         pass
@@ -66,9 +67,10 @@ def create(args):
     try: 
         cfnconn = boto.cloudformation.connect_to_region(config.region,aws_access_key_id=config.aws_access_key_id,
                                                         aws_secret_access_key=config.aws_secret_access_key)
-    except Exception, e:
+    except Exception as e:
+        logger.exception(e)
         logger.critical(e.message)
-        sys.exit(1)
+        raise e
 
 
 
@@ -100,9 +102,10 @@ def create(args):
     except KeyboardInterrupt:
         print('\nExiting...')
         sys.exit(0)
-    except Exception, e:
+    except Exception as e:
+        logger.exception(e)
         logger.critical(e.message)
-        sys.exit(1)
+        raise e
 
         
 def update(args):
